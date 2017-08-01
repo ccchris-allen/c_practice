@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 typedef struct NODE {
     int value;
@@ -50,6 +51,24 @@ void bst_insert(BST *tree, int value) {
     tree->size++;
 }
 
+int _bst_exists_recurse(NODE *tree_node, int value) {
+    if (!tree_node) {
+        return 0;
+    } else if (tree_node->value == value) { 
+        return 1;
+    } else if (tree_node->value > value) {
+        return _bst_exists_recurse(tree_node->left, value);
+    } else if (tree_node->value < value) {
+        return _bst_exists_recurse(tree_node->right, value);
+    } else {
+        return 0; // not sure what happened!
+    }
+}
+
+int bst_exists(BST *tree, int value) {
+   return _bst_exists_recurse(tree->root, value); 
+}
+
 NODE * _bst_max_recurse(NODE *tree_node) {
     return (tree_node->right) ?  _bst_max_recurse(tree_node->right) : tree_node;
 } 
@@ -71,12 +90,16 @@ int bst_min(BST *tree) {
 }
 
 int main() { 
+    int i;
+
     BST *tree = bst_init();
 
-    bst_insert(tree, 32);
-    bst_insert(tree, 3);
-    bst_insert(tree, 2);
+    // seed random numbers
+    srand(time(NULL));
 
+    for (i = 0; i < 500; i++) {
+        bst_insert(tree, rand() % 1000);
+    }
 
     printf("SIZE: %d\n", tree->size);
     printf("ROOT: %d\n", tree->root->value);
@@ -87,5 +110,12 @@ int main() {
     printf("Max VALUE: %d\n", bst_max(tree));
     printf("MIN VALUE: %d\n", bst_min(tree));
 
+    printf("32 exists? %s\n", bst_exists(tree, 32) ? "YES" : "NO");
+    printf("55 exists? %s\n", bst_exists(tree, 55) ? "YES" : "NO");
+    printf("12 exists? %s\n", bst_exists(tree, 12) ? "YES" : "NO");
+    printf("3 exists? %s\n", bst_exists(tree, 3) ? "YES" : "NO");
+
+    
+    
     return 0;
 }
