@@ -15,7 +15,7 @@ const char BASE_32_ENCODE[] = "0123456789BCDEFGHJKMNPQRSTUVWXYZ";
 char *encode(POINT p, int precision) {
     // NOTE: Precision should be mulitiple of 5)
     // otherwise hash value will be incorrect (in base-32)
-    unsigned int bits = 0x0;
+    uint bits = 0x0;
     float xmin = -180.0, xmax = 180.0;
     float ymin = -90.0, ymax = 90.0;
     float midpoint;
@@ -59,21 +59,22 @@ POINT decode(char *geohash) {
     size_t size = strlen(geohash);   
     float xmin = -180.0, xmax = 180.0;
     float ymin = -90.0, ymax = 90.0;
+    float *bound;
     int i, j, bit_num = 1;
     
     for (i = 0; i < size; i++) {
-        // crazy way of getting index of character in string
+        // crazy way of getting index of character in string (not optimal)
         uint bits = strchr(BASE_32_ENCODE, toupper(geohash[i])) - BASE_32_ENCODE;
 
         for (j = 4; j >= 0; j--) {
             uint bit = (bits >> j) & 0x1;
 
             if (bit_num % 2 == 1) { // if longitude
-                float *xpick = (bit) ? &xmin : &xmax;
-                *xpick = (xmin + xmax) / 2.0;
+                bound = (bit) ? &xmin : &xmax;
+                *bound = (xmin + xmax) / 2.0;
             } else {
-                float *ypick = (bit) ? &ymin : &ymax;
-                *ypick = (ymin + ymax) / 2.0;
+                bound = (bit) ? &ymin : &ymax;
+                *bound = (ymin + ymax) / 2.0;
             }
                 
             bit_num++;
@@ -91,6 +92,8 @@ int main(int argc, char *argv[]) {
         char *geohash = encode(p, precision);
 
         printf("GEOHASH ENCODE: %s\n", geohash);
+
+        free(geohash);
     } else if (argc == 2) {
         POINT p = decode(argv[1]);
 
