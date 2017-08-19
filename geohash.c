@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 typedef struct POINT {
     float latitude;
@@ -62,26 +63,19 @@ POINT decode(char *geohash) {
     
     for (i = 0; i < size; i++) {
         // crazy way of getting index of character in string
-        uint bits = strchr(BASE_32_ENCODE, geohash[i]) - BASE_32_ENCODE;
+        uint bits = strchr(BASE_32_ENCODE, toupper(geohash[i])) - BASE_32_ENCODE;
 
         for (j = 4; j >= 0; j--) {
             uint bit = (bits >> j) & 0x1;
 
-            if (bit) { 
-                // longitude
-                if (bit_num % 2 == 1) {
-                    xmin = (xmin + xmax) / 2.0;
-                } else {
-                    ymin = (ymin + ymax) / 2.0;
-                }
+            if (bit_num % 2 == 1) { // if longitude
+                float *xpick = (bit) ? &xmin : &xmax;
+                *xpick = (xmin + xmax) / 2.0;
             } else {
-                if (bit_num % 2 == 1) {
-                    xmax = (xmin + xmax) / 2.0; 
-                } else {
-                    ymax = (ymin + ymax) / 2.0;  
-                }
+                float *ypick = (bit) ? &ymin : &ymax;
+                *ypick = (ymin + ymax) / 2.0;
             }
-
+                
             bit_num++;
         }
     }
