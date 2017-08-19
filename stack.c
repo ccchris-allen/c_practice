@@ -76,6 +76,7 @@ int main() {
     while(stack_size(stack) > 0) {
         ITEM *item = stack_pop(stack);
         printf("ITEM: %d\n", item->value);
+        free(item);
     }
 
     // free up memory

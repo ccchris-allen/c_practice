@@ -86,6 +86,7 @@ int main() {
     while(q_size(q) > 0) {
         ITEM *item = q_pop(q);
         printf("ITEM: %d\n", item->value);
+        free(item);
     }
 
     // free up memory
