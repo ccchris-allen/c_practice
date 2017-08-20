@@ -12,13 +12,17 @@ typedef struct POINT {
 const char BASE_32_ENCODE[] = "0123456789BCDEFGHJKMNPQRSTUVWXYZ";
 
 
+double mean(double x, double y) {
+    return (x + y) / 2.0;
+}
+
 char *encode(POINT p, int precision) {
     // NOTE: Precision should be mulitiple of 5)
     // otherwise hash value will be incorrect (in base-32)
     uint bits = 0x0;
     double xmin = -180.0, xmax = 180.0;
     double ymin = -90.0, ymax = 90.0;
-    float midpoint;
+    double midpoint;
     int i, char_num = 0;
     char *geohash = (char *)malloc((precision / 5) * sizeof(char *));
 
@@ -26,7 +30,7 @@ char *encode(POINT p, int precision) {
 
         //if even, split vertically
         if (i % 2 == 0) {
-            midpoint = (xmin + xmax) / 2.0;
+            midpoint = mean(xmin, xmax);
 
             if (p.longitude < midpoint) {
                 xmax = midpoint;  
@@ -36,7 +40,7 @@ char *encode(POINT p, int precision) {
                 bits = (bits << 1) | 0x1;
             }
         } else {
-            midpoint = (ymin + ymax) / 2.0;
+            midpoint = mean(ymin, ymax);
             
             if (p.latitude < midpoint) {
                 ymax = midpoint;  
@@ -73,18 +77,18 @@ POINT decode(char *geohash) {
             if (bit_num % 2 == 1) { 
                 // if longitude
                 bound = (bit == 1) ? &xmin : &xmax;
-                *bound = (xmin + xmax) / 2.0;
+                *bound = mean(xmin, xmax);
             } else { 
                 // if latitude
                 bound = (bit == 1) ? &ymin : &ymax;
-                *bound = (ymin + ymax) / 2.0;
+                *bound = mean(ymin, ymax);
             }
                 
             bit_num++;
         }
     }
 
-    return (POINT) { (ymin + ymax) / 2.0, (xmin + xmax) / 2.0 };
+    return (POINT) { mean(ymin, ymax), mean(xmin, xmax) };
 }
 
 int main(int argc, char *argv[]) {
