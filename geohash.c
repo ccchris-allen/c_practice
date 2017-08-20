@@ -4,8 +4,8 @@
 #include <ctype.h>
 
 typedef struct POINT {
-    float latitude;
-    float longitude;
+    double latitude;
+    double longitude;
 } POINT;
 
 // uses somewhat rare base32 mapping (https://en.wikipedia.org/wiki/geohash)
@@ -16,8 +16,8 @@ char *encode(POINT p, int precision) {
     // NOTE: Precision should be mulitiple of 5)
     // otherwise hash value will be incorrect (in base-32)
     uint bits = 0x0;
-    float xmin = -180.0, xmax = 180.0;
-    float ymin = -90.0, ymax = 90.0;
+    double xmin = -180.0, xmax = 180.0;
+    double ymin = -90.0, ymax = 90.0;
     float midpoint;
     int i, char_num = 0;
     char *geohash = (char *)malloc((precision / 5) * sizeof(char *));
@@ -49,6 +49,7 @@ char *encode(POINT p, int precision) {
 
         if ((i + 1) % 5 == 0) {
             geohash[char_num++] = BASE_32_ENCODE[bits & 0x1F];
+            bits = 0x0;
         }
     }
 
@@ -57,9 +58,9 @@ char *encode(POINT p, int precision) {
 
 POINT decode(char *geohash) {
     size_t size = strlen(geohash);   
-    float xmin = -180.0, xmax = 180.0;
-    float ymin = -90.0, ymax = 90.0;
-    float *bound;
+    double xmin = -180.0, xmax = 180.0;
+    double ymin = -90.0, ymax = 90.0;
+    double *bound; 
     int i, j, bit_num = 1;
     
     for (i = 0; i < size; i++) {
@@ -69,11 +70,13 @@ POINT decode(char *geohash) {
         for (j = 4; j >= 0; j--) {
             uint bit = (bits >> j) & 0x1;
 
-            if (bit_num % 2 == 1) { // if longitude
-                bound = (bit) ? &xmin : &xmax;
+            if (bit_num % 2 == 1) { 
+                // if longitude
+                bound = (bit == 1) ? &xmin : &xmax;
                 *bound = (xmin + xmax) / 2.0;
-            } else {
-                bound = (bit) ? &ymin : &ymax;
+            } else { 
+                // if latitude
+                bound = (bit == 1) ? &ymin : &ymax;
                 *bound = (ymin + ymax) / 2.0;
             }
                 
