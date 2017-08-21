@@ -6,7 +6,33 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MAX(x, y) (x > y) ? x : y
+#define MIN(x, y) (x < y) ? x : y
 
+typedef struct BOUNDS {
+    double minx;
+    double miny;
+    double maxx;
+    double maxy;
+} BOUNDS;
+
+
+BOUNDS bounds(double points[][2], int size) {
+    int i;
+    double minx = INFINITY;
+    double miny = INFINITY;
+    double maxx = -INFINITY;
+    double maxy = -INFINITY;
+
+    for (i = 0; i < size; i++) { 
+        minx = MIN(minx, points[i][0]);
+        miny = MIN(miny, points[i][1]);
+        maxx = MAX(maxx, points[i][0]);
+        maxy = MAX(maxy, points[i][1]);
+    }
+
+    return (BOUNDS) { minx, miny, maxx, maxy };
+}
 
 double random_double(const double min, const double max) {
     struct timespec t;
@@ -38,6 +64,10 @@ int within_radius(double x1, double y1, double x2, double y2,  double radius) {
 void calculate_k(double points[][2], int size, double radius) {
     int i, j;
     int count = 0;
+    BOUNDS bound = bounds(points, size);
+    double area = (bound.maxx - bound.minx) * (bound.maxy - bound.miny);
+
+    printf("AREA: %f\n", area);
 
     for (i = 0; i < size; i++) {
         double x1 = points[i][0];
@@ -81,4 +111,6 @@ int main(int argc, char *argv[]) {
     }
 
     calculate_k(points, 1000, 60.0);
+
+    printf("BOUNDS: %f\n", bounds(points, 1000).maxx);
 }
