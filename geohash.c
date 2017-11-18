@@ -17,7 +17,7 @@ double mean(double x, double y) {
 }
 
 char *encode(POINT p, int precision) {
-    // NOTE: Precision should be mulitiple of 5)
+    // NOTE: Precision should be mulitiple of 5
     // otherwise hash value will be incorrect (in base-32)
     uint bits = 0x0;
     double xmin = -180.0, xmax = 180.0;
