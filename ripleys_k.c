@@ -6,6 +6,7 @@
 
 #define TRUE 1
 #define FALSE 0
+#define INF INFINITY
 #define MAX(x, y) (x > y) ? x : y
 #define MIN(x, y) (x < y) ? x : y
 
@@ -16,30 +17,56 @@ typedef struct BOUNDS {
     double maxy;
 } BOUNDS;
 
-
-BOUNDS bounds(double points[][2], int size) {
+double mean(int arr[], int size) {
     int i;
-    double minx = INFINITY;
-    double miny = INFINITY;
-    double maxx = -INFINITY;
-    double maxy = -INFINITY;
+    double sum = 0.0;
 
-    for (i = 0; i < size; i++) { 
-        minx = MIN(minx, points[i][0]);
-        miny = MIN(miny, points[i][1]);
-        maxx = MAX(maxx, points[i][0]);
-        maxy = MAX(maxy, points[i][1]);
+    for (i = 0; i < size; i++) {
+        sum += arr[i];
     }
 
-    return (BOUNDS) { minx, miny, maxx, maxy };
+    return sum / (double) size;
+}
+    
+BOUNDS bounds(double **points, int size) {
+    int i;
+    BOUNDS bound = { INF, INF, -INF, -INF };
+
+    for (i = 0; i < size; i++) { 
+        bound.minx = MIN(bound.minx, points[i][0]);
+        bound.miny = MIN(bound.miny, points[i][1]);
+        bound.maxx = MAX(bound.maxx, points[i][0]);
+        bound.maxy = MAX(bound.maxy, points[i][1]);
+    }
+
+    return bound;
 }
 
 double random_double(const double min, const double max) {
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
-    srand(t.tv_nsec % 3451);
+    srand(t.tv_nsec * t.tv_nsec);
 
     return (min + (rand() / (double) RAND_MAX) * (max - min));
+}
+
+double **random_pts(int size, double minx, double miny, double maxx, double maxy) {
+    double **points = (double **) malloc(size * sizeof(double *));
+    int i;
+
+    for (i = 0; i < size; i++) {
+        points[i] = (double *) malloc(2 * sizeof(double));
+        points[i][0] = random_double(minx, maxx);
+        points[i][1] = random_double(miny, maxy);
+    }
+
+    return points;
+}
+
+void free_points(double **points, int size) {
+    int i;
+    for (i = 0; i < size; i++) free(points[i]);
+    free(points);
 }
 
 double euclidean_distance(double x1, double y1, double x2, double y2) {
@@ -51,23 +78,30 @@ double euclidean_distance(double x1, double y1, double x2, double y2) {
 }
 
 int within_radius(double x1, double y1, double x2, double y2,  double radius) {
-    // if outside range, eliminate automatically (before doing calculation)
-    if (x2 < x1 - radius || x2 > x1 + radius || y2 < y1 - radius || y2 > y1 + radius) {
+    double dx = abs(x2 - x1);
+    double dy = abs(y2 - y1);
+
+    if (dx > radius || dy > radius) {
         return FALSE;
-    }
+    } 
+    
+    if ((dx + dy) <= radius) {
+        return TRUE;
+    } 
 
-    double dist = euclidean_distance(x1, y1, x2, y2);
-
-    return (dist <= radius) ? TRUE : FALSE;
+    double dxdx = (dx * dx);
+    double dydy = (dy * dy);
+    double rr = (radius * radius);
+     
+    return (dxdx + dydy) <= rr;
 }
 
-void calculate_k(double points[][2], int size, double radius) {
+double kest(double **points, int size, double radius) {
     int i, j;
-    int count = 0;
+    int total = 0;
+    //double distances[size][size] = { -INF }; //cache these?? not implemented currently
     BOUNDS bound = bounds(points, size);
     double area = (bound.maxx - bound.minx) * (bound.maxy - bound.miny);
-
-    printf("AREA: %f\n", area);
 
     for (i = 0; i < size; i++) {
         double x1 = points[i][0];
@@ -80,37 +114,58 @@ void calculate_k(double points[][2], int size, double radius) {
             double y2 = points[j][1];
 
             if (within_radius(x1, y1, x2, y2, radius)) {
-                count++;
+                total++;
             }
         }
-        printf("COUNT FOR %d: %d\n", i, count);
-        count = 0;
     }
+
+    double density = size / area;
+    double kd = (1 / density) *  (total / (double) size);
+
+    return kd;
+}
+
+double lest(double **points, int size, double radius) {
+    double k = kest(points, size, radius);
+
+    return sqrt(k / M_PI);
+}
+    
+double lest_zero(double **points, int size, double radius) {
+    double l = lest(points, size, radius);
+
+    return radius - l;
 }
 
 int main(int argc, char *argv[]) { 
+
+    if (argc != 2) {
+        printf("Need two args: min and max!\n");
+        return 1;
+    }
+
     double min = (double) atof(argv[1]);
     double max = (double) atof(argv[2]);
-    int i;
+    int i, j;
+   
+    int size = 5000;
+    int num_folds = 99;
+    double radius = 10.0; 
+    double scores[5] = { 0 };
+    double radii[5] = { 50.0, 100.0, 150.0, 200.0, 250.0 };
 
-    for (i = 0; i < 100; i++) {
-        printf("RANDOM NUMBER: %f\n", random_double(min, max));
+    for (j = 0; j < num_folds; j++) {
+        double **points = random_pts(size, min, min, max, max);
+
+        for (i = 0; i < 5; i++) {
+            double v = lest_zero(points, size, radii[i]);
+            scores[i] += v;
+        }
+
+        free_points(points, size);
     }
 
-    printf("DISTANCE: %f\n", euclidean_distance(0.0, 12.2, 31.2, 3.2));
-    printf("ISWITHIN???: %i\n", within_radius(0.0, 12.2, 31.2, 3.2, 33.0));
-
-
-    double points[1000][2];
-    
-    for (i = 0; i < 1000; i++) {
-        double x = random_double(min, max);
-        double y = random_double(min, max);
-        points[i][0] = x;
-        points[i][1] = y;
+    for (i = 0; i < 5; i++) {
+        printf("r=%f, v=%f\n", radii[i], scores[i] / (double) num_folds); 
     }
-
-    calculate_k(points, 1000, 60.0);
-
-    printf("BOUNDS: %f\n", bounds(points, 1000).maxx);
 }
